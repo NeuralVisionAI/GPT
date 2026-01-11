@@ -41,7 +41,9 @@ n = int(0.9*len(data)) #Splitting data
 train_data = data[:n] #90% data is for training
 val_data = data[n:] #10% is for validation
 
+#loading data in batches
 def get_batch(split):
+  #generate a small batch of data of inputs x and targets y
   data = train_data if split=='train' else val_data
   ix = torch.randint(len(data)-block_size, (batch_size,))
   x = torch.stack([data[i:i+block_size] for i in ix])
@@ -76,16 +78,16 @@ class Head(nn.Module):
 
   def forward(self, x):
     B,T,C = x.shape
-    k = self.key(x)   #(B,T,C)
-    q = self.query(x) #(B,T,C)
+    k = self.key(x)   #(B,T,head_size)
+    q = self.query(x) #(B,T,head_size)
     #comping the attention scores 
     wei = q @ k.transpose(-2,-1) * C**-0.5 #(B,T,T)
     wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
     wei = F.softmax(wei, dim=-1) #(B,T,T)
     wei = self.dropout(wei)
     #performing the weighted aggregation of the values
-    v = self.value(x) #(B,T,C)
-    out = wei @ v #(B, T, T) @ (B, T, C) --> (B, T, C)
+    v = self.value(x) #(B,T,head_size)
+    out = wei @ v #(B, T, T) @ (B, T, head_size) --> (B, T, head_size)
     return out
 
 class MultiHeadAttention(nn.Module):
